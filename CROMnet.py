@@ -224,12 +224,6 @@ class invStandardizeQ(pl.LightningModule):
     def __call__(self, q_standardized):
         return self.mean_q_torch  + q_standardized  * self.std_q_torch
     
-    def grad_func(self, x):
-        # `(N, in\_features)`
-        assert(len(x.shape)==2)
-        grad_batch = self.std_q_torch.expand_as(x)
-        grad_batch = torch.diag_embed(grad_batch)
-        return grad_batch
 
 class Prepare(pl.LightningModule):
     def __init__(self, preprop_params, lbllength, siren):
@@ -250,27 +244,6 @@ class Prepare(pl.LightningModule):
         x = torch.cat((xhat, x0), 1)
 
         return x
-    
-    def grad_func(self, x):
-        # `(N, in\_features)`
-        assert(len(x.shape)==2)
-
-        xhat = x[:,:self.lbllength]
-        x0 = x[:, self.lbllength:]
-
-        grad_xhat = torch.Tensor([1]).type_as(x)
-        grad_xhat = grad_xhat.expand_as(xhat)
-
-        if self.siren:
-            multi = 2 * torch.reciprocal(self.max_x_torch - self.min_x_torch)
-        else:
-            multi = torch.reciprocal(self.std_x_torch)
-        grad_x0 = multi.expand_as(x0)
-
-        grad_batch = torch.cat((grad_xhat, grad_x0), 1)
-        grad_batch = torch.diag_embed(grad_batch)
-        
-        return grad_batch
 
     def clipX(self, x):
         return 2 * (x - self.min_x_torch) / (self.max_x_torch - self.min_x_torch) - 1
@@ -283,34 +256,6 @@ class Prepare(pl.LightningModule):
             return self.clipX(x)
         else:
             return self.standardizeX(x)
-
-def make_linear_grad_of(weight):
-    def grad(x):
-        # `(N, in\_features)`
-        assert(len(x.shape)==2)
-        weight_batch = weight.view(1, weight.size(0), weight.size(1))
-        weight_batch = weight_batch.expand(x.size(0), weight.size(0), weight.size(1))
-        return weight_batch
-    return grad
-
-def make_elu_grad_of(alpha):
-    def grad(x):
-        # `(N, in\_features)`
-        assert(len(x.shape)==2)
-        grad_batch = torch.where(x > 0.0, torch.ones_like(x), alpha * torch.exp(x))
-        grad_batch = torch.diag_embed(grad_batch)
-        return grad_batch
-    return grad
-
-# sin(w*x) -> w*cos(w*x)
-def make_siren_grad_of(omega0):
-    def grad(x):
-        # `(N, in\_features)`
-        assert(len(x.shape)==2)
-        grad_batch = omega0 * torch.cos(omega0 * x)
-        grad_batch = torch.diag_embed(grad_batch)
-        return grad_batch
-    return grad
 
 
 class NetAutoDec(pl.LightningModule):
@@ -354,7 +299,6 @@ class NetAutoDec(pl.LightningModule):
         self.layers.append(self.invStandardizeQ)
 
         self.init_weights()
-        self.init_grads()
     
     def init_weights(self):
         with torch.no_grad():
@@ -375,23 +319,6 @@ class NetAutoDec(pl.LightningModule):
             if self.siren:
                 self.dec0.weight.uniform_(-1 / self.dec0.in_features, 
                                              1 / self.dec0.in_features)
-
-    def init_grads(self):
-        for layer in self.layers:
-            if layer.__class__.__name__ == 'Linear':
-                layer.grad_func = make_linear_grad_of(layer.weight)
-            elif layer.__class__.__name__ == 'Activation':
-                if self.siren:
-                    layer.grad_func = make_siren_grad_of(self.omega_0)
-                else:
-                    layer.grad_func = make_elu_grad_of(1)
-            elif layer.__class__.__name__ == 'invStandardizeQ':
-                pass
-            elif layer.__class__.__name__ == 'Prepare':
-                pass
-            else:
-                print(layer.__class__.__name__)
-                exit('invalid grad layer')
 
     def forward(self, x):
         for layer in self.layers:
