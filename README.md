@@ -1,1 +1,1 @@
-# CROM_online_training
+# CROM_offline_training
