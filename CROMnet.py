@@ -7,19 +7,17 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import random
-from pynvml import *
 from pytorch_lightning.utilities import rank_zero_info
 from datetime import datetime
 
 class CROMnet(pl.LightningModule):
-    def __init__(self, data_format, preprop_params, example_input_array, initial_lr, batch_size, lr, epo, lbl, scale_mlp, ks, strides, siren_enc, siren_dec, enc_omega_0, dec_omega_0, verbose, loaded_from=None):
+    def __init__(self, data_format, example_input_array, initial_lr, batch_size, lr, epo, lbl, scale_mlp, ks, strides, siren_enc, siren_dec, enc_omega_0, dec_omega_0, verbose, loaded_from=None):
         super(CROMnet, self).__init__()
 
         self.save_hyperparameters()
 
         #data specific parameters
         self.data_format = data_format
-        self.preprop_params = preprop_params
         self.verbose = verbose #Print data specific parameters or not
 
         #learning parameters
@@ -45,10 +43,15 @@ class CROMnet(pl.LightningModule):
 
         self.criterion = nn.MSELoss()
 
-        self.encoder = NetAutoEnc(data_format, preprop_params, self.lbllength, self.ks, self.strides, self.siren_enc, self.enc_omega_0)
-        self.decoder = NetAutoDec(data_format, preprop_params, self.lbllength, self.scale_mlp, self.siren_dec, self.dec_omega_0)
+        self.encoder = NetAutoEnc(data_format, self.lbllength, self.ks, self.strides, self.siren_enc, self.enc_omega_0)
+        self.decoder = NetAutoDec(data_format, self.lbllength, self.scale_mlp, self.siren_dec, self.dec_omega_0)
         self.sim_state_list = []
 
+    def setup(self, stage):
+        preprop_params = self.datamodule.get_dataParams()
+        self.decoder.invStandardizeQ.set_params(preprop_params)
+        self.decoder.prepare.set_params(preprop_params)
+        self.encoder.standardizeQ.set_params(preprop_params)
 
     def training_step(self, train_batch, batch_idx):
         
@@ -145,12 +148,12 @@ class CROMnet(pl.LightningModule):
         rank_zero_info('# of points per file: ' + str(self.data_format['npoints']))
         rank_zero_info('# of i_dim: ' + str(self.data_format['i_dim']))
         rank_zero_info('# of o_dim: ' + str(self.data_format['o_dim']))
-        rank_zero_info('x mean: ' + str(self.preprop_params['mean_x']))
-        rank_zero_info('x std: ' + str(self.preprop_params['std_x']))
-        rank_zero_info('x min: ' + str(self.preprop_params['min_x']))
-        rank_zero_info('x max: ' + str(self.preprop_params['max_x']))
-        rank_zero_info('q mean: ' + str(self.preprop_params['mean_q']))
-        rank_zero_info('q std: ' + str(self.preprop_params['std_q']))
+        #rank_zero_info('x mean: ' + str(self.preprop_params['mean_x']))
+        #rank_zero_info('x std: ' + str(self.preprop_params['std_x']))
+        #rank_zero_info('x min: ' + str(self.preprop_params['min_x']))
+        #rank_zero_info('x max: ' + str(self.preprop_params['max_x']))
+        #rank_zero_info('q mean: ' + str(self.preprop_params['mean_q']))
+        #rank_zero_info('q std: ' + str(self.preprop_params['std_q']))
 
         rank_zero_info('\n---Network Info---')
 
@@ -216,8 +219,10 @@ class Activation(pl.LightningModule):
         return torch.sin(self.omega_0 * input)
 
 class invStandardizeQ(pl.LightningModule):
-    def __init__(self, preprop_params):
+    def __init__(self,):
         super(invStandardizeQ, self).__init__()
+
+    def set_params(self, preprop_params):
         self.register_buffer('mean_q_torch', torch.from_numpy(preprop_params['mean_q']).float())
         self.register_buffer('std_q_torch', torch.from_numpy(preprop_params['std_q']).float())
 
@@ -226,14 +231,16 @@ class invStandardizeQ(pl.LightningModule):
     
 
 class Prepare(pl.LightningModule):
-    def __init__(self, preprop_params, lbllength, siren):
+    def __init__(self, lbllength, siren):
         super(Prepare, self).__init__()
         self.siren = siren
+        self.lbllength = lbllength
+
+    def set_params(self, preprop_params):
         self.register_buffer('min_x_torch', torch.from_numpy(preprop_params['min_x']).float())
         self.register_buffer('max_x_torch', torch.from_numpy(preprop_params['max_x']).float())
         self.register_buffer('mean_x_torch', torch.from_numpy(preprop_params['mean_x']).float())
         self.register_buffer('std_x_torch', torch.from_numpy(preprop_params['std_x']).float())
-        self.lbllength = lbllength
 
     def __call__(self, x):
         xhat = x[:,:self.lbllength]
@@ -259,7 +266,7 @@ class Prepare(pl.LightningModule):
 
 
 class NetAutoDec(pl.LightningModule):
-    def __init__(self, data_format, preprop_params, lbllength, scale_mlp, siren, omega_0):
+    def __init__(self, data_format, lbllength, scale_mlp, siren, omega_0):
         super(NetAutoDec, self).__init__()
 
         self.lbllength = lbllength
@@ -280,8 +287,8 @@ class NetAutoDec(pl.LightningModule):
                               data_format['o_dim'])
 
         self.act = Activation(self.siren, self.omega_0)
-        self.invStandardizeQ = invStandardizeQ(preprop_params)
-        self.prepare = Prepare(preprop_params, self.lbllength, self.siren)
+        self.invStandardizeQ = invStandardizeQ()
+        self.prepare = Prepare(self.lbllength, self.siren)
 
         self.layers = []
         self.layers.append(self.prepare)
@@ -328,8 +335,10 @@ class NetAutoDec(pl.LightningModule):
 
 
 class standardizeQ(pl.LightningModule):
-    def __init__(self, preprop_params):
+    def __init__(self,):
         super(standardizeQ, self).__init__()
+    
+    def set_params(self, preprop_params):
         self.register_buffer('mean_q_torch', torch.from_numpy(preprop_params['mean_q']).float())
         self.register_buffer('std_q_torch', torch.from_numpy(preprop_params['std_q']).float())
 
@@ -338,7 +347,7 @@ class standardizeQ(pl.LightningModule):
 
 
 class NetAutoEnc(pl.LightningModule):
-    def __init__(self, data_format, preprop_params, lbllength, ks ,strides, siren, omega_0):
+    def __init__(self, data_format, lbllength, ks ,strides, siren, omega_0):
         super(NetAutoEnc, self).__init__()
         
         self.lbllength = lbllength
@@ -364,7 +373,7 @@ class NetAutoEnc(pl.LightningModule):
         self.enc10 = nn.Linear(data_format['o_dim']*l_in, 32)
         self.enc11 = nn.Linear(32, lbllength)
 
-        self.standardizeQ = standardizeQ(preprop_params)
+        self.standardizeQ = standardizeQ()
         self.act = Activation(self.siren, self.omega_0)
 
         self.init_weights()

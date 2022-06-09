@@ -8,19 +8,6 @@ import random
 import math
 import h5py
 from util import *
-from typing import Optional
-
-def get_dataSet(data_path):
-    data_list = DataList(data_path, 1.0)
-    assert (len(data_list.data_list) > 0)
-
-    master_dataset = SimulationDataset(data_path, data_list.data_list)
-
-    data_format, preprop_params = get_dataParams(master_dataset)
-    data_format['data_path'] = data_path
-
-    return master_dataset, data_format, preprop_params
-
 
 '''
 Simulation Dataset

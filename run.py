@@ -1,7 +1,6 @@
-from SimulationDataset import *
-from CROMnet import *
-from Callbacks import *
 import argparse
+from SimulationDataModule import *
+from CROMnet import *
 from util import *
 from FindEmptyCuda import *
 from pytorch_lightning import Trainer
@@ -10,38 +9,23 @@ from pytorch_lightning.strategies import DDPStrategy
 
 def main(args):
 
-    output_path = './outputs'
-    time_string = getTime()
-
-    weightdir = output_path + '/weights/' + time_string
-    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, filename='{epoch}-{step}')
-
-    logdir = output_path + '/logs'
-    logger = pl_loggers.TensorBoardLogger(save_dir=logdir, name='', version=time_string, log_graph=False)
-
-    callbacks=[checkpoint_callback]
-
-    trainer = Trainer.from_argparse_args(args, gpus=findEmptyCudaDeviceList(args.gpus), default_root_dir=output_path, callbacks=callbacks, logger=logger, max_epochs= np.sum(args.epo), log_every_n_steps=1, strategy=DDPStrategy(find_unused_parameters=False))
+    trainer = prepare_Trainer(args)
 
     if args.mode[0] == "train":
  
-        if args.m:
-
-            old_weight = args.m[0]
-
-        elif args.d:
+        if args.d:
 
             data_path = args.d[0]
-            master_dataset, data_format, preprop_params = get_dataSet(data_path)
-            example_input_array = torch.unsqueeze(master_dataset[0]['encoder_input'], 0)
 
-            dm = SimulationDataModule(master_dataset, args.batch_size, num_workers=64)
+            dm = SimulationDataModule(data_path, args.batch_size, num_workers=64)
+            data_format, example_input_array = dm.get_dataFormat()
 
             network_kwargs = get_validArgs(CROMnet, args)
-            net = CROMnet(data_format, preprop_params, example_input_array, **network_kwargs)
+            net = CROMnet(data_format, example_input_array, **network_kwargs)
+            net.datamodule = dm
         
         else:
-            exit('Insufficient Training Parameters')
+            exit('Enter data path')
 
         trainer.fit(net, dm)
 
