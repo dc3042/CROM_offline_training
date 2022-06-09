@@ -18,9 +18,10 @@ class CROMnet(pl.LightningModule):
 
         #data specific parameters
         self.data_format = data_format
-        self.verbose = verbose #Print data specific parameters or not
+        self.example_input_array = example_input_array
 
-        #learning parameters
+        #Training parameters
+        self.verbose = verbose #Print data specific parameters or not
         self.lr = initial_lr
         self.batch_size = batch_size
         self.learning_rates, self.accumulated_epochs = generateEPOCHS(lr, epo)
@@ -37,9 +38,6 @@ class CROMnet(pl.LightningModule):
         self.siren_dec = siren_dec
         self.enc_omega_0 = enc_omega_0
         self.dec_omega_0 = dec_omega_0      
-        
-        #Example input array
-        self.example_input_array = example_input_array
 
         self.criterion = nn.MSELoss()
 
@@ -184,7 +182,6 @@ class CROMnet(pl.LightningModule):
         optimizer = optim.Adam(self.parameters(), lr=self.lr)
         scheduler = LambdaLR(optimizer, lr_lambda=self.adaptiveLRfromRange)
         return [optimizer], [scheduler]
-        
 
     def on_train_start(self,):
         if self.verbose:
@@ -195,18 +192,17 @@ class CROMnet(pl.LightningModule):
             self.print_hyperparameters()
     
     def test_epoch_end(self, outputs):
-
         for sim_state in self.sim_state_list:
             
             sim_state.write_to_file()
 
-class Activation(pl.LightningModule):
+class Activation(nn.Module):
     def __init__(self, siren, omega_0):
         super(Activation, self).__init__()
         self.siren = siren
         self.omega_0 = omega_0
 
-    def __call__(self, input):
+    def forward(self, input):
         if self.siren:
             return self.actSIN(input)
         else:
@@ -218,7 +214,7 @@ class Activation(pl.LightningModule):
     def actSIN(self, input):
         return torch.sin(self.omega_0 * input)
 
-class invStandardizeQ(pl.LightningModule):
+class invStandardizeQ(nn.Module):
     def __init__(self,):
         super(invStandardizeQ, self).__init__()
 
@@ -226,11 +222,11 @@ class invStandardizeQ(pl.LightningModule):
         self.register_buffer('mean_q_torch', torch.from_numpy(preprop_params['mean_q']).float())
         self.register_buffer('std_q_torch', torch.from_numpy(preprop_params['std_q']).float())
 
-    def __call__(self, q_standardized):
+    def forward(self, q_standardized):
         return self.mean_q_torch  + q_standardized  * self.std_q_torch
     
 
-class Prepare(pl.LightningModule):
+class Prepare(nn.Module):
     def __init__(self, lbllength, siren):
         super(Prepare, self).__init__()
         self.siren = siren
@@ -242,7 +238,7 @@ class Prepare(pl.LightningModule):
         self.register_buffer('mean_x_torch', torch.from_numpy(preprop_params['mean_x']).float())
         self.register_buffer('std_x_torch', torch.from_numpy(preprop_params['std_x']).float())
 
-    def __call__(self, x):
+    def forward(self, x):
         xhat = x[:,:self.lbllength]
         
         x0 = x[:, self.lbllength:]
@@ -334,7 +330,7 @@ class NetAutoDec(pl.LightningModule):
     
 
 
-class standardizeQ(pl.LightningModule):
+class standardizeQ(nn.Module):
     def __init__(self,):
         super(standardizeQ, self).__init__()
     
@@ -342,7 +338,7 @@ class standardizeQ(pl.LightningModule):
         self.register_buffer('mean_q_torch', torch.from_numpy(preprop_params['mean_q']).float())
         self.register_buffer('std_q_torch', torch.from_numpy(preprop_params['std_q']).float())
 
-    def __call__(self, q):
+    def forward(self, q):
         return (q - self.mean_q_torch) / self.std_q_torch
 
 
