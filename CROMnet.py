@@ -48,10 +48,10 @@ class CROMnet(pl.LightningModule):
         self.sim_state_list = []
 
     def setup(self, stage):
-        preprop_params = self.datamodule.get_dataParams()
-        self.decoder.invStandardizeQ.set_params(preprop_params)
-        self.decoder.prepare.set_params(preprop_params)
-        self.encoder.standardizeQ.set_params(preprop_params)
+        self.preprop_params = self.datamodule.get_dataParams()
+        self.decoder.invStandardizeQ.set_params(self.preprop_params)
+        self.decoder.prepare.set_params(self.preprop_params)
+        self.encoder.standardizeQ.set_params(self.preprop_params)
 
     def training_step(self, train_batch, batch_idx):
         
@@ -148,12 +148,12 @@ class CROMnet(pl.LightningModule):
         rank_zero_info('# of points per file: ' + str(self.data_format['npoints']))
         rank_zero_info('# of i_dim: ' + str(self.data_format['i_dim']))
         rank_zero_info('# of o_dim: ' + str(self.data_format['o_dim']))
-        #rank_zero_info('x mean: ' + str(self.preprop_params['mean_x']))
-        #rank_zero_info('x std: ' + str(self.preprop_params['std_x']))
-        #rank_zero_info('x min: ' + str(self.preprop_params['min_x']))
-        #rank_zero_info('x max: ' + str(self.preprop_params['max_x']))
-        #rank_zero_info('q mean: ' + str(self.preprop_params['mean_q']))
-        #rank_zero_info('q std: ' + str(self.preprop_params['std_q']))
+        rank_zero_info('x mean: ' + str(self.preprop_params['mean_x']))
+        rank_zero_info('x std: ' + str(self.preprop_params['std_x']))
+        rank_zero_info('x min: ' + str(self.preprop_params['min_x']))
+        rank_zero_info('x max: ' + str(self.preprop_params['max_x']))
+        rank_zero_info('q mean: ' + str(self.preprop_params['mean_q']))
+        rank_zero_info('q std: ' + str(self.preprop_params['std_q']))
 
         rank_zero_info('\n---Network Info---')
 

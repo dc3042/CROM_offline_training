@@ -117,13 +117,6 @@ class SimulationDataModule(pl.LightningDataModule):
         with open(meanandstd_q_preprocessed_file, 'rb') as f:
             self.mean_q = np.load(f)
             self.std_q = np.load(f)
-        
-        rank_zero_info('x mean: ' + str(self.mean_x))
-        rank_zero_info('x std: ' + str(self.std_x))
-        rank_zero_info('x min: ' + str(self.min_x))
-        rank_zero_info('x max: ' + str(self.max_x))
-        rank_zero_info('q mean: ' + str(self.mean_q))
-        rank_zero_info('q std: ' + str(self.std_q))
 
     def get_dataParams(self,): 
         return {'mean_q': self.mean_q, 'std_q': self.std_q, 'mean_x': self.mean_x, 'std_x': self.std_x, 'min_x': self.min_x, 'max_x': self.max_x}

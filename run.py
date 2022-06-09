@@ -2,10 +2,6 @@ import argparse
 from SimulationDataModule import *
 from CROMnet import *
 from util import *
-from FindEmptyCuda import *
-from pytorch_lightning import Trainer
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.strategies import DDPStrategy
 
 def main(args):
 
