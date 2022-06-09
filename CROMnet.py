@@ -68,7 +68,7 @@ class CROMnet(pl.LightningModule):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
 
         self.log('train_loss_epoch', avg_loss)
-        self.log('step', self.current_epoch)
+        self.log('step', torch.tensor(self.current_epoch, dtype=torch.float32))
 
         return 
 

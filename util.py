@@ -2,11 +2,45 @@ import numpy as np
 import inspect
 import time
 import math
-from Callbacks import *
-from FindEmptyCuda import *
-from pytorch_lightning import Trainer
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.strategies import DDPStrategy
+from pynvml import *
+import torch
+
+def getGMem(i):
+    h = nvmlDeviceGetHandleByIndex(i)
+    info = nvmlDeviceGetMemoryInfo(h)
+    total_memory_gb_used = round(info.used/1024**3, 1)
+    total_memory_gb_total = round(info.total/1024**3, 1)
+    total_memory_gb_free = round((info.total-info.used)/1024**3, 1)
+    return total_memory_gb_total, total_memory_gb_used, total_memory_gb_free
+    
+def findEmptyCudaDevice():
+    nvmlInit()
+    device_id = 0
+    free_memory_max = 0
+    for i in range(torch.cuda.device_count()):
+        total_memory_gb_total, total_memory_gb_used, total_memory_gb_free = getGMem(i)
+        if total_memory_gb_free > free_memory_max:
+            device_id = i
+            free_memory_max = total_memory_gb_free
+
+    if free_memory_max > 4.0:    
+        device = torch.device('cuda:'+str(device_id))
+    else:
+        exit('not enough cuda memory')
+    return device
+
+def findEmptyCudaDeviceList(num_gpu):
+    nvmlInit()
+    used_ram_list = np.array([])
+    for i in range(torch.cuda.device_count()):
+        total_memory_gb_total, total_memory_gb_used, total_memory_gb_free = getGMem(i)
+        used_ram_list = np.append(used_ram_list, total_memory_gb_used)
+    
+    low_used = np.argsort(used_ram_list)
+    gpu_list = low_used[:num_gpu]
+    assert(len(gpu_list)==num_gpu)
+    return gpu_list.tolist()
+
 
 def getTime():
     return time.strftime("%Y%m%d-%H%M%S")
@@ -26,25 +60,9 @@ def get_validArgs(cls, args):
     params = vars(args)
     valid_kwargs = inspect.signature(cls.__init__).parameters
     network_kwargs = {name: params[name] for name in valid_kwargs if name in params}
-    
+
     return network_kwargs
 
 def conv1dLayer(l_in, ks, strides):
+    
     return math.floor(float(l_in -(ks-1)-1)/strides + 1)
-
-def prepare_Trainer(args):
-
-    output_path = './outputs'
-    time_string = getTime()
-
-    weightdir = output_path + '/weights/' + time_string
-    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, filename='{epoch}-{step}')
-
-    logdir = output_path + '/logs'
-    logger = pl_loggers.TensorBoardLogger(save_dir=logdir, name='', version=time_string, log_graph=False)
-
-    callbacks=[checkpoint_callback]
-
-    trainer = Trainer.from_argparse_args(args, gpus=findEmptyCudaDeviceList(args.gpus), default_root_dir=output_path, callbacks=callbacks, logger=logger, max_epochs= np.sum(args.epo), log_every_n_steps=1, strategy=DDPStrategy(find_unused_parameters=False))
-
-    return trainer
