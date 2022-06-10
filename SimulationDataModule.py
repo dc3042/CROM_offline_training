@@ -2,6 +2,7 @@ from SimulationDataset import *
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_info
 from typing import Optional
+from torch.utils.data import DataLoader
 
 
 class SimulationDataModule(pl.LightningDataModule):

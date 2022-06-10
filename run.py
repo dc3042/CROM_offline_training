@@ -1,9 +1,12 @@
 import argparse
+import os
+import warnings
 
 from SimulationDataModule import *
 from CROMnet import *
 from Callbacks import *
 from util import *
+from Exporter import *
 
 from pytorch_lightning import Trainer
 from pytorch_lightning import loggers as pl_loggers
@@ -11,7 +14,8 @@ from pytorch_lightning.strategies import DDPStrategy
 
 def prepare_Trainer(args):
 
-    output_path = './outputs'
+
+    output_path = os.getcwd() + '/outputs'
     time_string = getTime()
 
     weightdir = output_path + '/weights/' + time_string
@@ -55,6 +59,15 @@ def main(args):
 
         trainer.fit(net, dm)
 
+        if args.export:
+            
+            weight_path = get_weightPath(trainer)
+            ex = Exporter(weight_path)
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                ex.export()
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Neural Representation training')
@@ -96,6 +109,8 @@ if __name__ == "__main__":
                         type=int, nargs='*', required=False)
     parser.add_argument('-batch_size', help='batch size',
                     type=int, required=False, default=16)
+    parser.add_argument('-export', help='export torchscripts',
+                    action='store_true')
 
     # Trainer arguments
     parser = Trainer.add_argparse_args(parser)

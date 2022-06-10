@@ -5,6 +5,33 @@ import math
 from pynvml import *
 import torch
 
+
+'''
+Computing Jacobian
+'''
+
+def computeJacobian(x, outputs):
+        
+    output_dim = outputs.size(2)
+    jacobian = None
+    for dim in range(output_dim):
+        dy_dx = torch.autograd.grad(outputs=outputs[:,:, dim], inputs=x, grad_outputs=torch.ones_like(outputs[:, :, dim]),
+                retain_graph=True, create_graph=False, allow_unused=True)[0]
+        #print("dy_dx shape: ", dy_dx.size())
+        #dy_dx shape: batchsize * num_sample, input_dim
+        dy_dx = dy_dx.view(outputs.size(0), outputs.size(1), 1, dy_dx.size(1))
+        # dy_dx size: [num, 1, input_dim], i.e., gradient of a scalar is a row vector
+        if jacobian is None:
+            jacobian = dy_dx
+        else:
+            jacobian = torch.cat([jacobian, dy_dx], 2)
+    
+    return jacobian
+
+'''
+Memory
+'''
+
 def getGMem(i):
     h = nvmlDeviceGetHandleByIndex(i)
     info = nvmlDeviceGetMemoryInfo(h)
@@ -41,10 +68,12 @@ def findEmptyCudaDeviceList(num_gpu):
     assert(len(gpu_list)==num_gpu)
     return gpu_list.tolist()
 
+'''
+Miscellaneous
+'''
 
 def getTime():
     return time.strftime("%Y%m%d-%H%M%S")
-
 
 def generateEPOCHS(learning_rates, epochs):
     
@@ -66,3 +95,6 @@ def get_validArgs(cls, args):
 def conv1dLayer(l_in, ks, strides):
     
     return math.floor(float(l_in -(ks-1)-1)/strides + 1)
+
+def get_weightPath(trainer):
+    return os.getcwd() + "/outputs/weights/{}/epoch={}-step={}.ckpt".format(trainer.logger.version, trainer.current_epoch - 1, trainer.global_step)

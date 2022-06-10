@@ -1,13 +1,18 @@
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback, TQDMProgressBar
 from pytorch_lightning.utilities import rank_zero_info
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
 import time
 
 class CustomCheckPointCallback(ModelCheckpoint):
     def on_train_end(self, trainer, pl_module):
         super().on_train_end(trainer, pl_module)
 
-        rank_zero_info("\nModel Version: " + pl_module.logger.version)
+        filename = "{}/epoch={}-step={}.ckpt".format(self.dirpath, trainer.current_epoch, trainer.global_step)
+
+        #rank_zero_info("\nModel Version: " + pl_module.logger.version)
+        rank_zero_info("\nmodel path: " + filename)
+    
 
 class EpochTimeCallback(Callback):
     def on_train_epoch_start(self, trainer, pl_module):

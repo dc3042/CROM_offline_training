@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import pytorch_lightning as pl
 import numpy as np
 import re
@@ -12,20 +12,6 @@ from util import *
 '''
 Simulation Dataset
 '''
-
-class SimulationDataModule(pl.LightningDataModule):
-    def __init__(self, dataset: str, batch_size: int = 32, num_workers=1):
-        super().__init__()
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.dataset = dataset
-
-    def train_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True)
-
-    def test_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True)
-
 
 class SimulationDataset(Dataset):
     def __init__(self, data_path, data_list):
