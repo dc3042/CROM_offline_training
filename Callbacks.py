@@ -3,12 +3,13 @@ from pytorch_lightning.callbacks import LearningRateMonitor, Callback, TQDMProgr
 from pytorch_lightning.utilities import rank_zero_info
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
 import time
+from util import get_weightPath
 
 class CustomCheckPointCallback(ModelCheckpoint):
     def on_train_end(self, trainer, pl_module):
         super().on_train_end(trainer, pl_module)
 
-        filename = "{}/epoch={}-step={}.ckpt".format(self.dirpath, trainer.current_epoch, trainer.global_step)
+        filename = get_weightPath(trainer)
 
         #rank_zero_info("\nModel Version: " + pl_module.logger.version)
         rank_zero_info("\nmodel path: " + filename)

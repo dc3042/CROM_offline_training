@@ -16,14 +16,8 @@ class SimulationDataModule(pl.LightningDataModule):
         assert (len(self.data_list.data_list) > 0)
 
         self.sim_dataset = SimulationDataset(self.data_path, self.data_list.data_list)
-
-    def prepare_data(self,):
-
         self.computeStandardizeTransformation()
-
-    def setup(self, stage: Optional[str] = None):
-
-        self.store_dataParams() 
+        #self.store_dataParams()
 
     def train_dataloader(self):
         return DataLoader(self.sim_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True)
@@ -60,6 +54,10 @@ class SimulationDataModule(pl.LightningDataModule):
             with open(preprocessed_file, 'wb') as f:
                 np.save(f, self.mean_q)
                 np.save(f, self.std_q)
+        
+        with open(preprocessed_file, 'rb') as f:
+            self.mean_q = np.load(f)
+            self.std_q = np.load(f)
 
     def computeMeanAndStdX(self):
         preprocessed_file = os.path.join(
@@ -76,6 +74,10 @@ class SimulationDataModule(pl.LightningDataModule):
             with open(preprocessed_file, 'wb') as f:
                 np.save(f, self.mean_x)
                 np.save(f, self.std_x)
+        
+        with open(preprocessed_file, 'rb') as f:
+            self.mean_x = np.load(f)
+            self.std_x = np.load(f)
     
     def computeMinAndMaxX(self):
         preprocessed_file = os.path.join(
@@ -92,6 +94,10 @@ class SimulationDataModule(pl.LightningDataModule):
             with open(preprocessed_file, 'wb') as f:
                 np.save(f, self.min_x)
                 np.save(f, self.max_x)
+        
+        with open(preprocessed_file, 'rb') as f:
+            self.min_x = np.load(f)
+            self.max_x = np.load(f)
 
     def computeStandardizeTransformation(self):
         
@@ -99,27 +105,8 @@ class SimulationDataModule(pl.LightningDataModule):
         self.computeMeanAndStdX()
         self.computeMinAndMaxX()
     
-    def store_dataParams(self):
-
-        minandmax_x_preprocessed_file = os.path.join(
-            self.sim_dataset.data_path, 'minandmax_x.npy')
-        with open(minandmax_x_preprocessed_file, 'rb') as f:
-            self.min_x = np.load(f)
-            self.max_x = np.load(f)
-        
-        meanandstd_x_preprocessed_file = os.path.join(
-            self.sim_dataset.data_path, 'meanandstd_x.npy')
-        with open(meanandstd_x_preprocessed_file, 'rb') as f:
-            self.mean_x = np.load(f)
-            self.std_x = np.load(f)
-        
-        meanandstd_q_preprocessed_file = os.path.join(
-            self.sim_dataset.data_path, 'meanandstd_q.npy')
-        with open(meanandstd_q_preprocessed_file, 'rb') as f:
-            self.mean_q = np.load(f)
-            self.std_q = np.load(f)
-
     def get_dataParams(self,): 
+
         return {'mean_q': self.mean_q, 'std_q': self.std_q, 'mean_x': self.mean_x, 'std_x': self.std_x, 'min_x': self.min_x, 'max_x': self.max_x}
 
     def get_dataFormat(self, ):

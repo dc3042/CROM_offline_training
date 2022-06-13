@@ -41,18 +41,18 @@ def main(args):
 
     trainer = prepare_Trainer(args)
 
-    if args.mode[0] == "train":
+    if args.mode == "train":
  
         if args.d:
 
-            data_path = args.d[0]
+            data_path = args.d
 
             dm = SimulationDataModule(data_path, args.batch_size, num_workers=64)
             data_format, example_input_array = dm.get_dataFormat()
+            preprop_params = dm.get_dataParams()
 
             network_kwargs = get_validArgs(CROMnet, args)
-            net = CROMnet(data_format, example_input_array, **network_kwargs)
-            net.datamodule = dm
+            net = CROMnet(data_format, preprop_params, example_input_array, **network_kwargs)
         
         else:
             exit('Enter data path')
@@ -67,6 +67,21 @@ def main(args):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 ex.export()
+    
+    elif args.mode == "test":
+
+        if args.m:
+
+            weight_path = args.m 
+
+            net = CROMnet.load_from_checkpoint(weight_path, loaded_from=weight_path)
+
+            dm = SimulationDataModule(net.data_format['data_path'], net.batch_size, num_workers=64)
+
+        else:
+            exit('Enter weight path')
+
+        trainer.test(net, dm)
 
 if __name__ == "__main__":
 
@@ -74,7 +89,7 @@ if __name__ == "__main__":
 
     # Mode for script
     parser.add_argument('-mode', help='train or test',
-                    type=str, nargs=1, required=True)
+                    type=str, required=True)
     
     # Network arguments
     parser.add_argument('-lbl', help='label length',
@@ -96,9 +111,9 @@ if __name__ == "__main__":
     
     # Network Training arguments
     parser.add_argument('-m', help='path to weight',
-                    type=str, nargs=1, required=False)
+                    type=str, required=False)
     parser.add_argument('-d', help='path to the dataset',
-                    type=str, nargs=1, required=False)
+                    type=str, required=False)
     parser.add_argument('-verbose', help='verbose',
                         action='store_false')
     parser.add_argument('-initial_lr', help='initial learning rate',

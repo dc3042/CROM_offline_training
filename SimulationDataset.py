@@ -7,6 +7,7 @@ import os
 import random
 import math
 import h5py
+from ObjLoader import *
 from util import *
 
 '''

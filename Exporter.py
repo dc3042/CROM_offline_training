@@ -62,7 +62,7 @@ class Exporter(object):
         #print("decoder trace finished")
 
         encoder_input = data_batched['encoder_input'].to(device)
-        output_regular, _ = net.forward(encoder_input)
+        output_regular, _, _ = net.forward(encoder_input)
 
         assert(torch.norm(output_regular-q_jit)<1e-10)
 
@@ -91,7 +91,7 @@ class Exporter(object):
         y = y.clone()
         
         grad_gt, y_gt = net_dec.computeJacobianFullAnalytical(x)
-        outputs_local, decoder_input = net(encoder_input)
+        outputs_local, _, decoder_input = net.forward(encoder_input)
         grad_gt_auto = computeJacobian(decoder_input, outputs_local)
         grad_gt_auto = grad_gt_auto.view(grad_gt_auto.size(0)*grad_gt_auto.size(1), grad_gt_auto.size(2), grad_gt_auto.size(3))
         grad_gt_auto = grad_gt_auto[0:num_sample, :, :]

@@ -57,6 +57,10 @@ def findEmptyCudaDevice():
     return device
 
 def findEmptyCudaDeviceList(num_gpu):
+
+    if num_gpu == None:
+        return None
+
     nvmlInit()
     used_ram_list = np.array([])
     for i in range(torch.cuda.device_count()):
@@ -98,3 +102,14 @@ def conv1dLayer(l_in, ks, strides):
 
 def get_weightPath(trainer):
     return os.getcwd() + "/outputs/weights/{}/epoch={}-step={}.ckpt".format(trainer.logger.version, trainer.current_epoch - 1, trainer.global_step)
+
+def convertInputFilenameIntoOutputFilename(filename_in, path_basename):
+    basename = os.path.basename(filename_in)
+
+    dirname = os.path.dirname(filename_in)
+    pardirname = os.path.dirname(dirname)
+    pardirname += '_pred'
+    pardirname += '_' + path_basename
+    dirname = os.path.basename(dirname)
+
+    return os.path.join(pardirname, dirname, basename)

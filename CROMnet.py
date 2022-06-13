@@ -10,16 +10,16 @@ import random
 from pytorch_lightning.utilities import rank_zero_info
 from datetime import datetime
 import copy
+from SimulationDataset import SimulationState
 
 class CROMnet(pl.LightningModule):
-    def __init__(self, data_format, example_input_array, initial_lr, batch_size, lr, epo, lbl, scale_mlp, ks, strides, siren_enc, siren_dec, enc_omega_0, dec_omega_0, verbose, loaded_from=None):
+    def __init__(self, data_format, preprop_params, example_input_array, initial_lr, batch_size, lr, epo, lbl, scale_mlp, ks, strides, siren_enc, siren_dec, enc_omega_0, dec_omega_0, verbose, loaded_from=None):
         super(CROMnet, self).__init__()
-
-        self.save_hyperparameters()
 
         #data specific parameters
         self.data_format = data_format
         self.example_input_array = example_input_array
+        self.preprop_params = preprop_params
 
         #Training parameters
         self.verbose = verbose #Print data specific parameters or not
@@ -46,17 +46,24 @@ class CROMnet(pl.LightningModule):
         self.decoder = NetAutoDec(data_format, self.lbllength, self.scale_mlp, self.siren_dec, self.dec_omega_0)
         self.sim_state_list = []
 
+        self.save_hyperparameters()
+
     def setup(self, stage):
-        self.preprop_params = self.datamodule.get_dataParams()
-        self.decoder.invStandardizeQ.set_params(self.preprop_params)
-        self.decoder.prepare.set_params(self.preprop_params)
-        self.encoder.standardizeQ.set_params(self.preprop_params)
+        
+        if stage == "fit":
+
+            self.decoder.invStandardizeQ.set_params(self.preprop_params)
+            self.decoder.prepare.set_params(self.preprop_params)
+            self.encoder.standardizeQ.set_params(self.preprop_params)
+        
+        if stage == "test":
+            self.path_basename = os.path.split(os.path.dirname(self.loaded_from))[-1]
 
     def training_step(self, train_batch, batch_idx):
         
         encoder_input = train_batch['encoder_input']
         q = train_batch['q']
-        outputs_local, _ = self.forward(encoder_input)
+        outputs_local, _, _= self.forward(encoder_input)
         loss = 1000 * self.criterion(outputs_local, q)
 
         tensorboard_logs = {'train_loss_step': loss}
@@ -77,11 +84,11 @@ class CROMnet(pl.LightningModule):
 
         encoder_input = test_batch['encoder_input']
         q = test_batch['q']
-        outputs_local = self.forward(encoder_input)
-        loss = 1000 * ((outputs_local - q)**2).mean()
+        outputs_local, labels, _ = self.forward(encoder_input)
+        loss = 1000 * self.criterion(outputs_local, q)
         self.log('test_loss', loss)
 
-        labels = self.forward_enc(encoder_input).detach().cpu().numpy()
+        labels = labels.detach().cpu().numpy()
         
         batch_size_local = encoder_input.size(0)
 
@@ -104,8 +111,7 @@ class CROMnet(pl.LightningModule):
             sim_state = SimulationState(filename_out, False, input_x, input_q, input_t, label=label)
             # specific to fem dataset
             if 'faces' in test_batch:
-                if self.write_faces:
-                    sim_state.faces = faces[i, :, :]
+                sim_state.faces = faces[i, :, :]
                 sim_state.q = sim_state.x + sim_state.q # assume displacenement training data; generalize later
             self.sim_state_list.append(sim_state)
 
@@ -123,6 +129,9 @@ class CROMnet(pl.LightningModule):
 
         #encoder -> xhat
         xhat = self.encoder.forward(state)
+        
+        #Store label
+        label = xhat.view(xhat.size(0), xhat.size(2))
 
         #decoder input
         xhat = xhat.expand(xhat.size(0), self.data_format['npoints'], xhat.size(2))
@@ -141,7 +150,7 @@ class CROMnet(pl.LightningModule):
         #return to original shape
         x = x.view(batch_size_local, -1, x.size(1))
 
-        return x, decoder_input
+        return x, label, decoder_input
 
 
     def print_hyperparameters(self):
