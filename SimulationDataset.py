@@ -2,9 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import pytorch_lightning as pl
 import numpy as np
-import re
 import os 
-import random
 import math
 import h5py
 from ObjLoader import *
@@ -44,6 +42,10 @@ class SimulationDataset(Dataset):
             data_item['faces'] = faces
 
         return data_item
+
+'''
+Simulation State
+'''
 
 class SimulationState(object):
     def __init__(self, filename, readfile=True, input_x=None, input_q=None, input_t=None, label=None):
@@ -104,75 +106,4 @@ class SimulationState(object):
             obj_loader.export(filename_obj)
 
 
-'''
-Helper Functions
-'''
-
-hprefix = 'h5_f'
-config_file_pattern = r'h5_f_(\d+)\.h5'
-config_file_matcher = re.compile(config_file_pattern)
-dir_pattern = r'sim_seq_(.*?)'
-dir_matcher = re.compile(dir_pattern)
-
-
-class DataList(object):
-    def __init__(self, root_dir, train_ratio):
-        self.data_list, self.data_train_list, self.data_test_list, self.data_train_dir, self.data_test_dir = obtainFilesRecursively(
-            root_dir, train_ratio)
-
-def obtainFilesRecursively(path, train_ratio):
-    data_list = []
-    data_train_list = []
-    data_test_list = []
-    data_train_dir = []
-    data_test_dir = []
-
-    dir_list = os.listdir(path)
-
-    num_sims = 0
-    dir_list_sim = []
-    for dirname in dir_list:
-        if os.path.isdir(os.path.join(path,dirname)):
-            dir_match = dir_matcher.match(
-                dirname)
-            if dir_match != None:
-                num_sims += 1
-                dir_list_sim.append(dirname)
-    random.seed(0)
-    random.shuffle(dir_list_sim)
-
-    train_size = math.ceil(train_ratio * num_sims)
-    test_size = num_sims - train_size
-
-    counter = 0
-    for dirname in dir_list_sim:
-        data_list_local = data_train_list if counter < train_size else data_test_list
-        data_dir_local = data_train_dir if counter < train_size else data_test_dir
-        data_dir_local.append(os.path.join(path, dirname))
-        counter += 1
-        for filename in os.listdir(os.path.join(path, dirname)):
-            config_file_match = config_file_matcher.match(
-                filename)
-            if config_file_match is None:
-                continue
-            # skip files begin
-            file_number = int(config_file_match[1])
-            # skip files finish
-            # print(file_number)
-            fullfilename = os.path.join(path, dirname, filename)
-            data_list.append(fullfilename)
-            data_list_local.append(fullfilename)
-        # exit()
-    return data_list, data_train_list, data_test_list, data_train_dir, data_test_dir
-
-def convertInputFilenameIntoOutputFilename(filename_in, path_basename):
-    basename = os.path.basename(filename_in)
-
-    dirname = os.path.dirname(filename_in)
-    pardirname = os.path.dirname(dirname)
-    pardirname += '_pred'
-    pardirname += '_' + path_basename
-    dirname = os.path.basename(dirname)
-
-    return os.path.join(pardirname, dirname, basename)
 
