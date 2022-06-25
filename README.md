@@ -16,4 +16,4 @@ python run.py -mode train -d [data directory] -initial_lr [learning rate constan
 python run.py -mode test -m [path to .ckpt file to test]
 ```
 
-***You may also provide any built-in flags for PytorchLightning's [Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html) ***
+You may also provide any built-in flags for PytorchLightning's [Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html)
