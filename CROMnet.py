@@ -47,8 +47,9 @@ class CROMnet(pl.LightningModule):
 
         self.criterion = nn.MSELoss()
 
-        self.encoder = NetAutoEnc(data_format, self.lbllength, self.ks, self.strides, self.siren_enc, self.enc_omega_0)
-        self.decoder = NetAutoDec(data_format, self.lbllength, self.scale_mlp, self.siren_dec, self.dec_omega_0)
+        self.encoder = NetEnc(data_format, self.lbllength, self.ks, self.strides, self.siren_enc, self.enc_omega_0)
+        self.decoder = NetDec(data_format, self.lbllength, self.scale_mlp, self.siren_dec, self.dec_omega_0)
+        
         self.sim_state_list = []
 
         self.save_hyperparameters()
@@ -220,9 +221,9 @@ class CROMnet(pl.LightningModule):
 Decoder Network
 '''
 
-class NetAutoDec(pl.LightningModule):
+class NetDec(pl.LightningModule):
     def __init__(self, data_format, lbllength, scale_mlp, siren, omega_0):
-        super(NetAutoDec, self).__init__()
+        super(NetDec, self).__init__()
 
         self.lbllength = lbllength
         self.scale_mlp = scale_mlp        
@@ -321,11 +322,11 @@ class NetAutoDec(pl.LightningModule):
 Decoder Gradient Network
 '''
 
-class NetAutoDecFuncGrad(pl.LightningModule):
-    def __init__(self, netautodec):
-        super(NetAutoDecFuncGrad, self).__init__()
+class NetDecFuncGrad(pl.LightningModule):
+    def __init__(self, netdec):
+        super(NetDecFuncGrad, self).__init__()
         self.layers = nn.ModuleList()
-        for layer in netautodec.layers:
+        for layer in netdec.layers:
             if not layer.__class__.__name__ == 'Activation':
                 layer_copy = copy.deepcopy(layer)
             else:
@@ -363,9 +364,9 @@ class NetAutoDecFuncGrad(pl.LightningModule):
 Encoder Network
 '''
 
-class NetAutoEnc(pl.LightningModule):
+class NetEnc(pl.LightningModule):
     def __init__(self, data_format, lbllength, ks ,strides, siren, omega_0):
-        super(NetAutoEnc, self).__init__()
+        super(NetEnc, self).__init__()
         
         self.lbllength = lbllength
         self.siren = siren

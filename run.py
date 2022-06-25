@@ -58,15 +58,13 @@ def main(args):
             exit('Enter data path')
 
         trainer.fit(net, dm)
+        
+        weight_path = get_weightPath(trainer)
+        ex = Exporter(weight_path)
 
-        if args.export:
-            
-            weight_path = get_weightPath(trainer)
-            ex = Exporter(weight_path)
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                ex.export()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ex.export()
     
     elif args.mode == "test":
 
@@ -124,8 +122,6 @@ if __name__ == "__main__":
                         type=int, nargs='*', required=False)
     parser.add_argument('-batch_size', help='batch size',
                     type=int, required=False, default=16)
-    parser.add_argument('-export', help='export torchscripts',
-                    action='store_true')
 
     # Trainer arguments
     parser = Trainer.add_argparse_args(parser)

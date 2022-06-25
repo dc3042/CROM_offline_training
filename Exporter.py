@@ -83,10 +83,10 @@ class Exporter(object):
         num_sample = 10
         x = x[0:num_sample, :]
         
-        net_auto_dec_func_grad = NetAutoDecFuncGrad(net_dec)
-        net_auto_dec_func_grad.to(device)
+        net_dec_func_grad = NetDecFuncGrad(net_dec)
+        net_dec_func_grad.to(device)
 
-        grad, y = net_auto_dec_func_grad(x)
+        grad, y = net_dec_func_grad(x)
         grad = grad.clone() # output above comes from inference mode, so we need to clone it to a regular tensor
         y = y.clone()
         
@@ -103,8 +103,8 @@ class Exporter(object):
         
         # grad, y = net_auto_dec_func_grad(x)
         with torch.jit.optimized_execution(True):
-            net_auto_dec_func_grad_jit = net_auto_dec_func_grad.to_torchscript(method = 'trace', example_inputs = x, check_trace=True, check_tolerance=1e-20)
-            grad_jit, y_jit = net_auto_dec_func_grad_jit(x)
+            net_dec_func_grad_jit = net_dec_func_grad.to_torchscript(method = 'trace', example_inputs = x, check_trace=True, check_tolerance=1e-20)
+            grad_jit, y_jit = net_dec_func_grad_jit(x)
         
         assert(torch.norm(grad-grad_jit)<1e-10)
         assert(torch.norm(y-y_jit)<1e-10)
@@ -112,14 +112,14 @@ class Exporter(object):
         #print("decoder gradient trace finished")
 
         dec_func_grad_jit_path = os.path.splitext(self.weight_path)[0]+"_dec_func_grad.pt"
-        print('decoder gradient torchscript path (gpu): ', dec_func_grad_jit_path)
-        net_auto_dec_func_grad_jit.save(dec_func_grad_jit_path)
+        print('decoder gradient torchscript path: ', dec_func_grad_jit_path)
+        net_dec_func_grad_jit.save(dec_func_grad_jit_path)
 
-        net_auto_dec_func_grad.cpu()
-        net_auto_dec_func_grad_jit = net_auto_dec_func_grad.to_torchscript(method = 'trace', example_inputs = x, check_trace=True, check_tolerance=1e-20)
+        net_dec_func_grad.cpu()
+        net_dec_func_grad_jit = net_dec_func_grad.to_torchscript(method = 'trace', example_inputs = x, check_trace=True, check_tolerance=1e-20)
         dec_func_grad_jit_path = os.path.splitext(self.weight_path)[0]+"_dec_func_grad_cpu.pt"
         #print('decoder gradient torchscript path (cpu): ', dec_func_grad_jit_path)
-        net_auto_dec_func_grad_jit.save(dec_func_grad_jit_path)
+        net_dec_func_grad_jit.save(dec_func_grad_jit_path)
 
 
         net_enc_jit_load = torch.jit.load(enc_jit_path)
