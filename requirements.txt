@@ -1,0 +1,5 @@
+h5py==3.4.0
+numpy==1.21.2
+pynvml==11.0.0
+pytorch_lightning==1.6.0.dev0
+torch==1.11.0+cu113

@@ -2,6 +2,26 @@
 
 This repository contains the offline training pipeline for [CROM](https://arxiv.org/abs/2206.02607#:~:text=CROM%3A%20Continuous%20Reduced%2DOrder%20Modeling%20of%20PDEs%20Using%20Implicit%20Neural%20Representations,-Peter%20Yichen%20Chen&text=The%20excessive%20runtime%20of%20high,%2Dorder%20modeling%20(ROM).)
 
+## Prerequisites
+We assume a fresh install of Ubuntu 20.04. For example,
+
+```
+docker run --gpus all --shm-size 128G -it --rm -v $HOME:/home/ubuntu ubuntu:20.04
+```
+
+Install python and pip:
+```
+apt-get update
+apt install python3-pip
+```
+
+## Dependencies
+Install python package dependencies through pip:
+
+```
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ### Training
