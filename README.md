@@ -36,6 +36,20 @@ For example
 python run.py -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/test_tension011_pig_long_l-0.01_p2d -lbl 6 -lr 1 0.1 0.05 0.02 0.01 -epo 3000 3000 3000 3000 3000 -siren_dec -batch_size 4 -scale_mlp 64 -dec_omega_0 30 --gpus 1
 ```
 
+### Data 
+Simulation data should be stored in a directory with the following structure. 
+For example, 
+```
+├───sim_data_parent_directory (contain multiple simulation sequences; each entry in this directory is a simulation sequence)
+    ├───sim_seq_ + suffix
+        ├───h5_f_0000000000.h5
+        ├───h5_f_0000000001.h5
+        ├───...
+        
+    ├───....
+```
+See SimulationData.py for the structure of the h5 file.
+
 ### Testing
 
 ```python
