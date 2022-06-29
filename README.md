@@ -33,7 +33,7 @@ python run.py -mode train -d [data directory] -initial_lr [learning rate constan
 For example 
 
 ```python
-python run.py -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/test_tension011_pig_long_l-0.01_p2d -lbl 6 -lr 1 0.1 0.05 0.02 0.01 -epo 3000 3000 3000 3000 3000 -siren_dec -batch_size 4 -scale_mlp 64 -dec_omega_0 30 --gpus 1
+python run.py -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/test_tension011_pig_long_l-0.01_p2d -lbl 6 -lr 10 5 2 1 0.5 0.2 -epo 3000 3000 3000 3000 3000 1000 -batch_size 16 -scale_mlp 20 --gpus 1
 ```
 
 ### Data 
