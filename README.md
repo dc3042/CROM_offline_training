@@ -48,7 +48,7 @@ For example,
         
     ├───....
 ```
-See SimulationData.py for the structure of the h5 file.
+See SimulationState under SimulationDataset.py for the structure of the h5 file.
 
 ### Testing
 
