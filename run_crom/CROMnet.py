@@ -1,4 +1,5 @@
-from util import *
+from pytorch_lightning.utilities import rank_zero_info
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,11 +8,11 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import random
-from pytorch_lightning.utilities import rank_zero_info
 from datetime import datetime
 import copy
-from SimulationDataset import SimulationState
 
+from run_crom.SimulationDataset import SimulationState
+from run_crom.util import *
 
 '''
 Full Network
@@ -269,10 +270,10 @@ class NetDec(pl.LightningModule):
             for layer in self.layers:
                 if layer.__class__.__name__ == 'Linear':
 
-                    random.seed(datetime.now())
+                    random.seed(0)
                     seed_number = random.randint(0, 100)
                     random.seed(0)
-                    torch.manual_seed(seed_number)
+                    torch.manual_seed(0)
                     
                     if self.siren:
                         layer.weight.uniform_(-np.sqrt(6 / layer.in_features) / self.omega_0, 
@@ -400,10 +401,10 @@ class NetEnc(pl.LightningModule):
         with torch.no_grad():
             for m in self.children():
                 
-                random.seed(datetime.now())
+                random.seed(0)
                 seed_number = random.randint(0, 100)
                 random.seed(0)
-                torch.manual_seed(seed_number)
+                torch.manual_seed(0)
                 
                 if type(m) == nn.Linear:
                     if self.siren:

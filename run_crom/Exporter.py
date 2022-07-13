@@ -1,8 +1,10 @@
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
-from util import *
-from CROMnet import *
-from SimulationDataset import *
+
 from torch.utils.data import DataLoader
+
+from run_crom.util import *
+from run_crom.CROMnet import *
+from run_crom.SimulationDataset import *
 
 class Exporter(object):
     def __init__(self, weight_path):

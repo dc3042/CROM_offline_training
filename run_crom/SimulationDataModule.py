@@ -1,8 +1,10 @@
-from SimulationDataset import *
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_info
+
 from typing import Optional
 from torch.utils.data import DataLoader
+
+from run_crom.SimulationDataset import *
 
 
 class SimulationDataModule(pl.LightningDataModule):
@@ -20,7 +22,7 @@ class SimulationDataModule(pl.LightningDataModule):
         #self.store_dataParams()
 
     def train_dataloader(self):
-        return DataLoader(self.sim_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True)
+        return DataLoader(self.sim_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True, shuffle=False)
 
     def test_dataloader(self):
         return DataLoader(self.sim_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True)

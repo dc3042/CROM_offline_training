@@ -5,8 +5,9 @@ import numpy as np
 import os 
 import math
 import h5py
-from ObjLoader import *
-from util import *
+
+from run_crom.ObjLoader import *
+from run_crom.util import *
 
 '''
 Simulation Dataset

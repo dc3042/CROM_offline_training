@@ -2,8 +2,10 @@ from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback, TQDMProgressBar
 from pytorch_lightning.utilities import rank_zero_info
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
+
 import time
-from util import get_weightPath
+
+from run_crom.util import get_weightPath
 
 class CustomCheckPointCallback(ModelCheckpoint):
     def on_train_end(self, trainer, pl_module):
