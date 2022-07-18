@@ -1,1 +1,20 @@
+# Weights and Logs
 outputs
+
+# Packages
+*.egg
+*.egg-info
+build
+dist
+dist/*
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+run_crom/__pycache__/*
+*.pyc

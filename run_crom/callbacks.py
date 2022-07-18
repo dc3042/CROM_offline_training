@@ -1,14 +1,19 @@
+from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from pytorch_lightning.callbacks import LearningRateMonitor, Callback, TQDMProgressBar
+from pytorch_lightning.utilities import rank_zero_info
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
-from util import *
-from CROMnet import *
-from SimulationDataset import *
-from torch.utils.data import DataLoader
+
+import time
+import warnings
+
+from run_crom.util import *
+from run_crom.cromnet import *
+from run_crom.simulation import SimulationDataset
 
 class Exporter(object):
     def __init__(self, weight_path):
         self.weight_path = weight_path
     
-    @rank_zero_only
     def export(self, ):
 
         net = CROMnet.load_from_checkpoint(self.weight_path)
@@ -20,12 +25,12 @@ class Exporter(object):
         net_enc = net.encoder.to(device)
         net_dec = net.decoder.to(device)
         
-        data_list = DataList(net.data_format['data_path'], 1.0)
-        dataset = SimulationDataset(net.data_format['data_path'], data_list.data_list)
-        trainloader = DataLoader(dataset, batch_size=1)
-        data_batched = next(iter(trainloader))
+        #data_list = DataList(net.data_format['data_path'], 1.0)
+        #dataset = SimulationDataset(net.data_format['data_path'], data_list.data_list)
+        #trainloader = DataLoader(dataset, batch_size=1)
+        data_batched = net.example_input_array
 
-        encoder_input = data_batched['encoder_input'].to(device)
+        encoder_input = data_batched.to(device)
 
         state = encoder_input[:,:, :net.data_format['o_dim']]
         x0 = encoder_input[:, :, net.data_format['o_dim']:]
@@ -61,7 +66,7 @@ class Exporter(object):
 
         #print("decoder trace finished")
 
-        encoder_input = data_batched['encoder_input'].to(device)
+        encoder_input = data_batched.to(device)
         output_regular, _, _ = net.forward(encoder_input)
 
         assert(torch.norm(output_regular-q_jit)<1e-10)
@@ -125,7 +130,7 @@ class Exporter(object):
         net_enc_jit_load = torch.jit.load(enc_jit_path)
         net_dec_jit_load = torch.jit.load(dec_jit_path)
 
-        encoder_input = data_batched['encoder_input'].to(device)
+        encoder_input = data_batched.to(device)
         state = encoder_input[:,:, :net.data_format['o_dim']]
         
         xhat_jit_load = net_enc_jit_load.forward(state)
@@ -149,3 +154,36 @@ class Exporter(object):
         dec_jit_path = os.path.splitext(self.weight_path)[0]+"_dec_cpu.pt"
         print('decoder torchscript path (cpu): ', dec_jit_path)
         net_dec_jit.save(dec_jit_path)
+
+
+class CustomCheckPointCallback(ModelCheckpoint):
+
+    CHECKPOINT_NAME_LAST='{epoch}-{step}'
+
+    @rank_zero_only
+    def on_train_end(self, trainer, pl_module):
+        super().on_train_end(trainer, pl_module)
+
+        filename = self.last_model_path
+
+        print("\nmodel path: " + filename)
+
+        ex = Exporter(filename)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ex.export()
+    
+
+class EpochTimeCallback(Callback):
+    def on_train_epoch_start(self, trainer, pl_module):
+        self.start_time = time.time()
+    def on_train_epoch_end(self, trainer, pl_module):
+        self.log("epoch_time", (time.time() - self.start_time), prog_bar=True)
+
+class LitProgressBar(TQDMProgressBar):
+    def get_metrics(self, trainer, model):
+        # don't show the version number
+        items = super().get_metrics(trainer, model)
+        items.pop("v_num", None)
+        return items

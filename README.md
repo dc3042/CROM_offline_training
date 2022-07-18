@@ -16,24 +16,31 @@ apt install python3-pip
 ```
 
 ## Dependencies
-Install python package dependencies through pip:
+From the project directory install through pip:
 
 ```
-pip install -r requirements.txt
+pip install .
 ```
+
+Alternatively, you may install via PyPI directly
+
+```
+pip install run_crom
+```
+
 
 ## Usage
 
 ### Training
 
 ```python
-python run.py -mode train -d [data directory] -initial_lr [learning rate constant] -epo [epoch sequence] -lr [learning rate scaling sequence] -batch_size [batch size] -lbl [label length] -scale_mlp [network width scale] -ks [kernel size] -strides [stride size] [-siren_dec] [-dec_omega_0 [decoder siren omega]] [-siren_enc] [-enc_omega_0 [encoder siren omega]] 
+run_crom -mode train -d [data directory] -initial_lr [learning rate constant] -epo [epoch sequence] -lr [learning rate scaling sequence] -batch_size [batch size] -lbl [label length] -scale_mlp [network width scale] -ks [kernel size] -strides [stride size] [-siren_dec] [-dec_omega_0 [decoder siren omega]] [-siren_enc] [-enc_omega_0 [encoder siren omega]] 
 ```
 
 For example 
 
 ```python
-python run.py -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/test_tension011_pig_long_l-0.01_p2d -lbl 6 -lr 10 5 2 1 0.5 0.2 -epo 3000 3000 3000 3000 3000 1000 -batch_size 16 -scale_mlp 20 --gpus 1
+run_crom -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/test_tension011_pig_long_l-0.01_p2d -lbl 6 -lr 1 0.1 0.05 0.02 0.01 -epo 3000 3000 3000 3000 3000 -siren_dec -batch_size 4 -scale_mlp 64 -dec_omega_0 30 --gpus 1
 ```
 
 ### Data 
@@ -53,7 +60,7 @@ See SimulationState under SimulationDataset.py for the structure of the h5 file.
 ### Testing
 
 ```python
-python run.py -mode test -m [path to .ckpt file to test]
+run_crom -mode test -m [path to .ckpt file to test]
 ```
 
 You may also provide any built-in flags for PytorchLightning's [Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags)

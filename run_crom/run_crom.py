@@ -1,25 +1,23 @@
-import argparse
-import os
-import warnings
-
-from SimulationDataModule import *
-from CROMnet import *
-from Callbacks import *
-from util import *
-from Exporter import *
-
 from pytorch_lightning import Trainer
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.strategies import DDPStrategy
 
-def prepare_Trainer(args):
+import argparse
+import os
 
+from run_crom.simulation import SimulationDataModule
+from run_crom.cromnet import CROMnet
+from run_crom.callbacks import *
+
+
+
+def prepare_Trainer(args):
 
     output_path = os.getcwd() + '/outputs'
     time_string = getTime()
 
     weightdir = output_path + '/weights/' + time_string
-    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, filename='{epoch}-{step}')
+    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, save_last=True)
 
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
@@ -36,52 +34,7 @@ def prepare_Trainer(args):
 
     return trainer
 
-
-def main(args):
-
-    trainer = prepare_Trainer(args)
-
-    if args.mode == "train":
- 
-        if args.d:
-
-            data_path = args.d
-
-            dm = SimulationDataModule(data_path, args.batch_size, num_workers=64)
-            data_format, example_input_array = dm.get_dataFormat()
-            preprop_params = dm.get_dataParams()
-
-            network_kwargs = get_validArgs(CROMnet, args)
-            net = CROMnet(data_format, preprop_params, example_input_array, **network_kwargs)
-        
-        else:
-            exit('Enter data path')
-
-        trainer.fit(net, dm)
-        
-        weight_path = get_weightPath(trainer)
-        ex = Exporter(weight_path)
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ex.export()
-    
-    elif args.mode == "test":
-
-        if args.m:
-
-            weight_path = args.m 
-
-            net = CROMnet.load_from_checkpoint(weight_path, loaded_from=weight_path)
-
-            dm = SimulationDataModule(net.data_format['data_path'], net.batch_size, num_workers=64)
-
-        else:
-            exit('Enter weight path')
-
-        trainer.test(net, dm)
-
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser(description='Neural Representation training')
 
@@ -115,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument('-verbose', help='verbose',
                         action='store_false')
     parser.add_argument('-initial_lr', help='initial learning rate',
-                        type=float, nargs=1, required=False, default=1e-4)
+                        type=float, nargs=1, required=False, default=8e-4)
     parser.add_argument('-lr', help='adaptive learning rates',
                     type=float, nargs='*', required=False)
     parser.add_argument('-epo', help='adaptive epoch sizes',
@@ -128,4 +81,42 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args)
+    trainer = prepare_Trainer(args)
+
+    if args.mode == "train":
+ 
+        if args.d:
+
+            data_path = args.d
+
+            dm = SimulationDataModule(data_path, args.batch_size, num_workers=64)
+            data_format, example_input_array = dm.get_dataFormat()
+            preprop_params = dm.get_dataParams()
+
+            network_kwargs = get_validArgs(CROMnet, args)
+            net = CROMnet(data_format, preprop_params, example_input_array, **network_kwargs)
+        
+        else:
+            exit('Enter data path')
+
+        trainer.fit(net, dm)
+    
+    elif args.mode == "test":
+
+        if args.m:
+
+            weight_path = args.m 
+
+            net = CROMnet.load_from_checkpoint(weight_path, loaded_from=weight_path)
+
+            dm = SimulationDataModule(net.data_format['data_path'], net.batch_size, num_workers=64)
+
+        else:
+            exit('Enter weight path')
+
+        trainer.test(net, dm)
+
+
+if __name__ == "__main__":
+
+    main()
