@@ -4,7 +4,7 @@ with open("README.md", "r") as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    "h5py==3.4.0", "numpy==1.21.2", "pynvml==11.0.0", "pytorch_lightning==1.6.5", "torch==1.11.0"]
+    "h5py==3.4.0", "numpy>=1.22", "pynvml==11.0.0", "pytorch_lightning==1.6.5", "torch==1.11.0"]
 
 setup(
     name="run_crom",
