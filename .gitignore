@@ -16,3 +16,5 @@ develop-eggs
 .installed.cfg
 lib
 lib64
+run_crom/__pycache__/*
+*.pyc

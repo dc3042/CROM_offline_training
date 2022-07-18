@@ -4,24 +4,20 @@ from pytorch_lightning.strategies import DDPStrategy
 
 import argparse
 import os
-import warnings
 
-from run_crom.SimulationDataModule import *
-from run_crom.CROMnet import *
-from run_crom.Callbacks import *
-from run_crom.util import *
-from run_crom.Exporter import *
+from run_crom.simulation import SimulationDataModule
+from run_crom.cromnet import CROMnet
+from run_crom.callbacks import *
 
 
 
 def prepare_Trainer(args):
 
-
     output_path = os.getcwd() + '/outputs'
     time_string = getTime()
 
     weightdir = output_path + '/weights/' + time_string
-    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, filename='{epoch}-{step}')
+    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, save_last=True)
 
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
@@ -104,13 +100,6 @@ def main():
             exit('Enter data path')
 
         trainer.fit(net, dm)
-        
-        weight_path = get_weightPath(trainer)
-        ex = Exporter(weight_path)
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ex.export()
     
     elif args.mode == "test":
 

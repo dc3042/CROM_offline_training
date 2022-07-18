@@ -11,7 +11,7 @@ import random
 from datetime import datetime
 import copy
 
-from run_crom.SimulationDataset import SimulationState
+from run_crom.simulation import SimulationState
 from run_crom.util import *
 
 '''
