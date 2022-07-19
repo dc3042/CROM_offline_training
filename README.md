@@ -35,6 +35,7 @@ For example
 ```python
 python run.py -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/test_tension011_pig_long_l-0.01_p2d -lbl 6 -lr 10 5 2 1 0.5 0.2 -epo 3000 3000 3000 3000 3000 1000 -batch_size 16 -scale_mlp 20 --gpus 1
 ```
+Sample data can be downloaded from here: https://www.dropbox.com/sh/c71axdcpxng2nu3/AABp0YZ6ho__Ih3P2cmjMC2Ga?dl=0
 
 ### Data 
 Simulation data should be stored in a directory with the following structure. 
