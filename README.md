@@ -50,3 +50,17 @@ run_crom -mode test -m [path to .ckpt file to test]
 ```
 
 You may also provide any built-in flags for PytorchLightning's [Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags)
+
+### Data 
+Simulation data should be stored in a directory with the following structure. 
+For example, 
+```
+├───sim_data_parent_directory (contain multiple simulation sequences; each entry in this directory is a simulation sequence)
+    ├───sim_seq_ + suffix
+        ├───h5_f_0000000000.h5
+        ├───h5_f_0000000001.h5
+        ├───...
+        
+    ├───....
+```
+See SimulationState under SimulationDataset.py for the structure of the h5 file.
