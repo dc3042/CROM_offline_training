@@ -8,7 +8,7 @@ requirements = [
 
 setup(
     name="run_crom",
-    version="0.0.1",
+    version="1.0.0",
     author="David Cho",
     author_email="dc3042@columbia.edu",
     description="A package for training and testing CROM weights",
