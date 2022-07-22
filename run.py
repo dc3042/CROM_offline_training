@@ -6,7 +6,6 @@ from SimulationDataModule import *
 from CROMnet import *
 from Callbacks import *
 from util import *
-from Exporter import *
 
 from pytorch_lightning import Trainer
 from pytorch_lightning import loggers as pl_loggers
@@ -19,7 +18,7 @@ def prepare_Trainer(args):
     time_string = getTime()
 
     weightdir = output_path + '/weights/' + time_string
-    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, filename='{epoch}-{step}')
+    checkpoint_callback = CustomCheckPointCallback(verbose=True, dirpath=weightdir, save_last=True)
 
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
@@ -58,13 +57,7 @@ def main(args):
             exit('Enter data path')
 
         trainer.fit(net, dm)
-        
-        weight_path = get_weightPath(trainer)
-        ex = Exporter(weight_path)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ex.export()
     
     elif args.mode == "test":
 

@@ -2,17 +2,33 @@ from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback, TQDMProgressBar
 from pytorch_lightning.utilities import rank_zero_info
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
+
 import time
-from util import get_weightPath
+import warnings
+
+from util import *
+from CROMnet import *
+from SimulationDataset import *
+from Exporter import *
+
 
 class CustomCheckPointCallback(ModelCheckpoint):
+
+    CHECKPOINT_NAME_LAST='{epoch}-{step}'
+
+    @rank_zero_only
     def on_train_end(self, trainer, pl_module):
         super().on_train_end(trainer, pl_module)
 
-        filename = get_weightPath(trainer)
+        filename = self.last_model_path
 
-        #rank_zero_info("\nModel Version: " + pl_module.logger.version)
-        rank_zero_info("\nmodel path: " + filename)
+        print("\nmodel path: " + filename)
+
+        ex = Exporter(filename)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ex.export()
     
 
 class EpochTimeCallback(Callback):
