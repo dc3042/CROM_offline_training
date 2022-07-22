@@ -2,9 +2,12 @@ from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback, TQDMProgressBar
 from pytorch_lightning.utilities import rank_zero_info
 from pytorch_lightning.utilities.rank_zero import rank_zero_only
+from pytorch_lightning.utilities.types import _METRIC
 
 import time
 import warnings
+from typing import Dict
+from copy import deepcopy
 
 from util import *
 from CROMnet import *
@@ -15,6 +18,19 @@ from Exporter import *
 class CustomCheckPointCallback(ModelCheckpoint):
 
     CHECKPOINT_NAME_LAST='{epoch}-{step}'
+
+    # Override to get step value from trainer instead of logger_connector
+    def _monitor_candidates(self, trainer: "pl.Trainer") -> Dict[str, _METRIC]:
+        monitor_candidates = deepcopy(trainer.callback_metrics)
+        # cast to int if necessary because `self.log("epoch", 123)` will convert it to float. if it's not a tensor
+        # or does not exist we overwrite it as it's likely an error
+        epoch = monitor_candidates.get("epoch")
+        monitor_candidates["epoch"] = (
+            epoch.int() if isinstance(epoch, torch.Tensor) else torch.tensor(trainer.current_epoch)
+        )
+
+        monitor_candidates["step"] = torch.tensor(trainer.global_step - 1)
+        return monitor_candidates
 
     @rank_zero_only
     def on_train_end(self, trainer, pl_module):
