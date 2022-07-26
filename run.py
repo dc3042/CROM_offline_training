@@ -59,7 +59,7 @@ def main(args):
         trainer.fit(net, dm)
 
     
-    elif args.mode == "test":
+    elif args.mode == "reconstruct":
 
         if args.m:
 

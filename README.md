@@ -37,6 +37,14 @@ python run.py -mode train -d /home/ubuntu/sim_data/libTorchFem_data/extreme_pig/
 ```
 Sample data can be downloaded from here: https://www.dropbox.com/sh/c71axdcpxng2nu3/AABp0YZ6ho__Ih3P2cmjMC2Ga?dl=0
 
+### Reconstructing Simulation
+
+```python
+python run.py -mode reconstruct -m [path to .ckpt file to use]
+```
+
+You may also provide any built-in flags for PytorchLightning's [Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags)
+
 ### Data 
 Simulation data should be stored in a directory with the following structure. 
 For example, 
@@ -50,11 +58,3 @@ For example,
     ├───....
 ```
 See SimulationState under SimulationDataset.py for the structure of the h5 file.
-
-### Testing
-
-```python
-python run.py -mode test -m [path to .ckpt file to test]
-```
-
-You may also provide any built-in flags for PytorchLightning's [Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags)
