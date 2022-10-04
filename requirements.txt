@@ -1,5 +1,5 @@
 h5py==3.4.0
-numpy==1.21.2
+numpy==1.22.0
 pynvml==11.0.0
 pytorch_lightning==1.6.5
 torch==1.11.0
