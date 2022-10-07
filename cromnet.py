@@ -1,24 +1,25 @@
-from util import *
+from pytorch_lightning.utilities import rank_zero_info
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as pl
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import LambdaLR, CyclicLR
 import numpy as np
 import random
-from pytorch_lightning.utilities import rank_zero_info
 from datetime import datetime
 import copy
-from SimulationDataset import SimulationState
 
+from simulation import SimulationState
+from util import *
 
 '''
 Full Network
 '''
 
 class CROMnet(pl.LightningModule):
-    def __init__(self, data_format, preprop_params, example_input_array, initial_lr, batch_size, lr, epo, lbl, scale_mlp, ks, strides, siren_enc, siren_dec, enc_omega_0, dec_omega_0, verbose, loaded_from=None):
+    def __init__(self, data_format, preprop_params, example_input_array, initial_lr, batch_size, lbl, scale_mlp, ks, strides, siren_enc, siren_dec, enc_omega_0, dec_omega_0, verbose, lr, epo, schedule, loaded_from=None):
         super(CROMnet, self).__init__()
 
         #data specific parameters
@@ -30,7 +31,15 @@ class CROMnet(pl.LightningModule):
         self.verbose = verbose #Print data specific parameters or not
         self.lr = initial_lr
         self.batch_size = batch_size
-        self.learning_rates, self.accumulated_epochs = generateEPOCHS(lr, epo)
+
+        if schedule == 'explicit':
+            self.schedule = 'explicit'
+            self.learning_rates, self.accumulated_epochs = generateEPOCHS(lr, epo)
+        else:
+            self.schedule = 'cyclic'
+            self.min_lr = lr[0]
+            self.max_lr = lr[1]
+            self.epoch_cycle = epo[0]
         
         #Updated parameters
         self.loaded_from = loaded_from
@@ -58,11 +67,17 @@ class CROMnet(pl.LightningModule):
         
         if stage == "fit":
 
+            if self.verbose:
+                self.print_hyperparameters()
+
             self.decoder.invStandardizeQ.set_params(self.preprop_params)
             self.decoder.prepare.set_params(self.preprop_params)
             self.encoder.standardizeQ.set_params(self.preprop_params)
         
         if stage == "test":
+
+            if self.verbose:
+                self.print_hyperparameters()
             self.path_basename = os.path.split(os.path.dirname(self.loaded_from))[-1]
 
     def training_step(self, train_batch, batch_idx):
@@ -184,6 +199,16 @@ class CROMnet(pl.LightningModule):
         if self.siren_dec:
             rank_zero_info('\tomega_0: ' + str(self.dec_omega_0))
         #rank_zero_info('lambda_f: ' + str(self.lambda_f))
+
+        rank_zero_info('\n---Training Info---')
+        if self.schedule == 'explicit':
+            rank_zero_info('initial LR: ' + str(self.lr))
+            rank_zero_info('LR schedule: ' + str(self.learning_rates))
+        elif self.schedule == 'cyclic':
+            rank_zero_info('min_lr: ' + str(self.min_lr))
+            rank_zero_info('max_lr: ' + str(self.max_lr))
+            rank_zero_info('epoch cycle: ' + str(self.epoch_cycle))
+
         rank_zero_info("")
 
     def adaptiveLRfromRange(self, epoch):
@@ -200,16 +225,11 @@ class CROMnet(pl.LightningModule):
     def configure_optimizers(self):
 
         optimizer = optim.Adam(self.parameters(), lr=self.lr)
-        scheduler = LambdaLR(optimizer, lr_lambda=self.adaptiveLRfromRange)
+        if self.schedule == 'explicit':
+            scheduler = LambdaLR(optimizer, lr_lambda=self.adaptiveLRfromRange)
+        else:
+            scheduler = CyclicLR(optimizer, self.min_lr, self.max_lr, step_size_up=self.epoch_cycle, cycle_momentum=False)
         return [optimizer], [scheduler]
-
-    def on_train_start(self,):
-        if self.verbose:
-            self.print_hyperparameters()
-    
-    def on_test_start(self,):
-        if self.verbose:
-            self.print_hyperparameters()
     
     def test_epoch_end(self, outputs):
         for sim_state in self.sim_state_list:
@@ -269,10 +289,10 @@ class NetDec(pl.LightningModule):
             for layer in self.layers:
                 if layer.__class__.__name__ == 'Linear':
 
-                    random.seed(datetime.now())
+                    random.seed(0)
                     seed_number = random.randint(0, 100)
                     random.seed(0)
-                    torch.manual_seed(seed_number)
+                    torch.manual_seed(0)
                     
                     if self.siren:
                         layer.weight.uniform_(-np.sqrt(6 / layer.in_features) / self.omega_0, 
@@ -400,10 +420,10 @@ class NetEnc(pl.LightningModule):
         with torch.no_grad():
             for m in self.children():
                 
-                random.seed(datetime.now())
+                random.seed(0)
                 seed_number = random.randint(0, 100)
                 random.seed(0)
-                torch.manual_seed(seed_number)
+                torch.manual_seed(0)
                 
                 if type(m) == nn.Linear:
                     if self.siren:
@@ -560,4 +580,3 @@ class Prepare(nn.Module):
         grad_batch = torch.diag_embed(grad_batch)
         
         return grad_batch
-

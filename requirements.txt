@@ -3,3 +3,4 @@ numpy>=1.22
 pynvml==11.0.0
 pytorch_lightning==1.6.5
 torch==1.11.0
+matplotlib==3.4.3
