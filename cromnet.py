@@ -37,9 +37,9 @@ class CROMnet(pl.LightningModule):
             self.learning_rates, self.accumulated_epochs = generateEPOCHS(lr, epo)
         else:
             self.schedule = 'cyclic'
-            self.min_lr = lr[0]
-            self.max_lr = lr[1]
-            self.epoch_cycle = epo[0]
+            self.min_lr = None
+            self.max_lr = None
+            self.epoch_cycle = None
         
         #Updated parameters
         self.loaded_from = loaded_from
