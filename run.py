@@ -154,7 +154,7 @@ def main():
         else:
             exit('Enter data path')
         
-        if args.schedule == 'cyclic':
+        if args.schedule != 'explicit':
             net, dm = tune_MinMaxLR(net,dm)
             net.epoch_cycle = (trainer.max_epochs//2) // 2 # Divide by Number of cycles you want to do
 
