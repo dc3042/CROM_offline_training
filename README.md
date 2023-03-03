@@ -1,6 +1,19 @@
-# CROM_offline_training
+# CROM: Continuous Reduced-Order Modeling of PDEs Using Implicit Neural Representations (Part I - Manifold Construction)
 
-This repository contains the offline training pipeline for [CROM](https://arxiv.org/abs/2206.02607#:~:text=CROM%3A%20Continuous%20Reduced%2DOrder%20Modeling%20of%20PDEs%20Using%20Implicit%20Neural%20Representations,-Peter%20Yichen%20Chen&text=The%20excessive%20runtime%20of%20high,%2Dorder%20modeling%20(ROM).)
+<p align="center">
+<img src="teaser/training.png"  width="640"/>
+</p>
+
+This repository is part I of the official implementation of the paper:
+
+> **[CROM: Continuous Reduced-Order Modeling of PDEs Using Implicit Neural Representations](https://arxiv.org/abs/2206.02607)**  
+> [Peter Yichen Chen](https://peterchencyc.com), [Jinxu Xiang](https://www.linkedin.com/in/jinxu-xiang-0862631a2), [Dong Heon Cho](https://www.linkedin.com/in/david-cho-003285131), [Yue Chang](https://changy1506.github.io), [Dong Heon Cho](https://www.linkedin.com/in/david-cho-003285131), G A Pershing, [Henrique Teles Maia](https://henriquetmaia.github.io), [Maurizio M. Chiaramonte](https://www.linkedin.com/in/maurizio-chiaramonte-03779762), [Kevin Carlberg](https://kevintcarlberg.net), [Eitan Grinspun](https://www.dgp.toronto.edu/~eitan/)  
+> Columbia University, Meta Reality Labs Research, MIT CSAIL, University of Toronto
+
+See the project page for more details (including videos): https://crom-pde.github.io
+
+Part I focuses on Section 3 of the paper, Manifold Construction / offline training stage. After training, we solve PDEs by time-integrating the dynamics of the manifold's latent space vector (Section 4 of the paper). These latent space dynamics codes are listed in [Part II](https://github.com/peterchencyc/CROM_online_deployment).
+
 
 ## Prerequisites
 We assume a fresh install of Ubuntu 20.04. For example,
